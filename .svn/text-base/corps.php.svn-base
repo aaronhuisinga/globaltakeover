@@ -1,0 +1,192 @@
+<?php
+include("config.php");
+checks();
+online();
+
+$row=mysql_fetch_array(mysql_query("SELECT username, corps FROM Players WHERE id='{$_COOKIE['id']}' LIMIT 1;"));
+$u = $row[0];
+$corps = addslashes($row[1]);
+$name=stripslashes($corps);
+
+if ($corps == 'None') { $title="Corps" ; } else { $title="$name"; }
+include("header.php");
+
+if($corps == 'None'){
+	$row=mysql_fetch_array(mysql_query("SELECT corp, stats FROM invite WHERE username='$u' LIMIT 1;"));
+	$id = $row[0];
+	$stats = $row[1];
+	if ($id != NULL AND $stats == 0) {
+		echo "<form action=\"applya.php\" method=\"POST\"><div id=\"crimestext\" align=\"center\">$id have invited you to join:
+			  <br /><input type=\"submit\" name=\"Accept\" value=\"Accept\"><input type=\"submit\" name=\"Decline\" value=\"Decline\"></form></div>";
+		include("footer.php");
+		exit();
+	}
+	$row=mysql_fetch_array(mysql_query("SELECT corpname FROM recruit WHERE username='$u' LIMIT 1;"));
+	$id = $row[0];
+	if ($id != NULL) {
+		echo "<form action=\"apply.php\" method=\"POST\"><div id=\"crimestext\" align=\"center\">Your current application is to: $id
+		      <br /><input type=\"submit\" name=\"Cancel\" value=\"Cancel\"></form></div>";
+		include("footer.php");
+		exit();
+	} else {
+	$row=mysql_num_rows(mysql_query("SELECT name FROM Corps WHERE recruit=1 LIMIT 1;"));
+	if ($row == 0) {
+		echo "<div id=\"crimestext\"><center>No corps are currently recruiting. Please try again later.</center></div>";
+		include("footer.php");
+		exit();
+	} else {
+	echo("<div align=\"center\" id=\"crimestext\"><h1 align=\"center\">Corps</h1><p>You are not currently in a Corp.<br />You can apply for one here.</p>");
+	echo("<form action=\"apply.php\" method=\"POST\"><table>");
+	$sql = mysql_query("SELECT name FROM Corps WHERE recruit=1");
+	while ($row=mysql_fetch_array($sql)){
+	$cname = $row[0];
+	echo "<tr><td align=\"right\">$cname</td> <td><input type=\"radio\" name=\"squad\" value=\"$cname\"></td></tr>";
+	}
+	echo "</table>";
+	echo "<p><input type=\"submit\" name=\"Apply\" value=\"Apply\"></p></form></div>";
+	include("footer.php");
+	exit();
+	}
+	}
+} else {
+$row=mysql_fetch_array(mysql_query("SELECT owner, co, leftl, rightl, leftro, rightro, name, money, bullets, tokens FROM Corps WHERE name='$corps' LIMIT 1;"));
+$o = $row[0];
+$c = $row[1];
+$ll = $row[2];
+$rl = $row[3];
+$lro = $row[4];
+$rro = $row[5];
+$name = addslashes($row[6]);
+$money = $row[7];
+$b = $row[8];
+$t = $row[9];
+$row=mysql_fetch_array(mysql_query("SELECT id, health FROM Players WHERE username = '$o' LIMIT 1;"));
+$ou = $row[0];
+$oh = $row[1];
+$row=mysql_fetch_array(mysql_query("SELECT id FROM Players WHERE username = '$c' LIMIT 1;"));
+$oc = $row[0];
+$row=mysql_fetch_array(mysql_query("SELECT id FROM Players WHERE username = '$ll' LIMIT 1;"));
+$oll = $row[0];
+$row=mysql_fetch_array(mysql_query("SELECT id FROM Players WHERE username = '$rl' LIMIT 1;"));
+$orl = $row[0];
+$row=mysql_fetch_array(mysql_query("SELECT id FROM Players WHERE username = '$lro' LIMIT 1;"));
+$olro = $row[0];
+$row=mysql_fetch_array(mysql_query("SELECT id FROM Players WHERE username = '$rro' LIMIT 1;"));
+$orro = $row[0];
+if ($oh < 1) {
+if ($u == $o OR $u == $c OR $u == $ll OR $u == $rl OR $u == $lro OR $u == $rro) {
+echo ("<div id=\"crimestext\" align=\"center\">
+<p>The Corp leader is dead! Do you want to take it over and become the new leader?
+<form name=\"pickup\" method=\"post\" action=\"cpickup.php\">
+<input type=\"hidden\" name=\"location\" value=\"$corps\" />
+<input type=\"submit\" name=\"submit\" value=\"Become the leader!\" />
+<input type=\"hidden\" name=\"submitted\" value=\"TRUE\" />
+</form></div>");
+include("footer.php");
+exit();
+}
+}
+$ename = stripslashes($name);
+echo "<div align=\"center\" id=\"ltable\"><h1>$ename</h1><br />";
+echo "
+<table width=\"100%\">
+<tr align=\"center\">
+<td>Leader: <a href=\"profile.php?id=$ou\">$o</a></td>";
+if ($c != 'None') {
+echo "<td>Co-Leader: <a href=\"profile.php?id=$oc\">$c</a></td></tr>";
+} elseif ($c == 'None'){
+echo"<td>Co-Leader: $c</td></tr>";
+}
+if($ll != 'None') {
+echo"<tr align=\"center\"><td>Left Lieutenant: <a href=\"profile.php?id=$oll\">$ll</a></td>";
+} elseif ($ll == 'None') {
+echo"<tr align=\"center\"><td>Left Lieutenant: $ll</td>";
+}
+if($rl != 'None'){
+echo"<td>Right Lieutenant: <a href=\"profile.php?id=$orl\">$rl</a></td></tr>";
+} elseif ($rl == 'None') {
+echo"<td>Right Lieutenant: $rl</td></tr>";
+}
+if($lro != 'None'){
+echo"<tr align=\"center\"><td>1st Recruiter: <a href=\"profile.php?id=$olro\">$lro</a></td>";
+} elseif ($lro == 'None') {
+echo"<tr align=\"center\"><td>1st Recruiter: $lro</td>";
+}
+if($rro != 'None'){
+echo"<td>
+2nd Recruiter: <a href=\"profile.php?id=$orro\">$rro</a></td></tr>
+</table>";
+} elseif($rro == 'None') {
+echo"<td>2nd Recruiter: $rro</td></tr></table>";	
+}
+
+echo "<a href=\"leavecorp.php\">Leave Corp</a><br></center>";
+
+if ($u == $o) {
+	echo "<a href=\"cprofedit.php\">Edit Corp Profile</a><br /><a href=\"corpo.php\">Corp Ownership</a><br><a href=\"scm.php\">Corp Meeting Control</a><br /><a href=\"massm.php\">Mass Messaging</a><br /><a href=\"mbc.php\">Money/Bullets/Token Control</a><br /><a href=\"cvehiclepref.php\">Change Vehicle Preferences</a><br /><a href=\"cname.php\">Change Corp Name</a><br />";
+	if ($u != $rro AND $u != $lro) {
+	echo "<a href=\"ro.php\">Recruiting Control</a>";
+	} elseif ($u == $rro OR $u == $lro) {
+	}
+} elseif ($u == $c) {
+	echo "<a href=\"cprofedit.php\">Edit Corp Profile</a><br /><a href=\"corpo.php\">Corp Ownership</a><br><a href=\"massm.php\">Mass Messaging</a><br /><a href=\"cvehiclepref.php\">Change Vehicle Preferences</a><br /><a href=\"mbc.php\">Money/Bullets/Token Control</a>";
+	if ($u != $rro AND $u != $lro) {
+	echo "<a href=\"ro.php\">Recruiting Control</a>";
+	} elseif ($u == $rro OR $u == $lro) {
+	}
+}
+if ($u == $rro OR $u == $lro) {
+	echo "<a href=\"cprofedit.php\">Edit Corp Profile</a><br /><a href=\"ro.php\">Recruiting Control</a>";
+} 
+if ($u == $rl OR $u == $ll) {
+	echo "<a href=\"cprofedit.php\">Edit Corp Profile</a>";
+}
+
+echo"
+<table width=\"100%\">
+<tr align=\"center\">
+<td>
+<form action=\"corpmoney.php\" method=\"post\"><table>
+<tr align=\"center\"><td>Corp Money: $".number_format($money)."</td></tr>
+<tr align=\"center\"><td>Insert Money: <input name=\"money\" type=\"text\"></td></tr>
+<tr align=\"center\"><td><input name=\"Moneys\" type=\"submit\" value=\"Deposit\"></td></tr>
+</table></form>
+</td>
+<td>
+<form action=\"corpbullets.php\" method=\"post\"><table>
+<tr align=\"center\"><td>Corp Bullets: ".number_format($b)."</td></tr>
+<tr align=\"center\"><td>Insert Bullets: <input name=\"bullets\" type=\"text\"></td></tr>
+<tr align=\"center\"><td><input name=\"bulletss\" type=\"submit\" value=\"Deposit\"></td></tr>
+</table></form>
+</td>
+<td>
+<form action=\"corptokens.php\" method=\"post\"><table>
+<tr align=\"center\"><td>Corp Tokens: ".number_format($t)."</td></tr>
+<tr align=\"center\"><td>Insert Tokens: <input name=\"tokens\" type=\"text\"></td></tr>
+<tr align=\"center\"><td><input name=\"tokenss\" type=\"submit\" value=\"Deposit\"></td></tr>
+</table>
+</form>
+</td>
+</tr>
+</table>
+<p align=\"center\"><a href=\"cvehicles.php\">Corp Vehicles</a></p>
+<br /><br />";
+
+	$users=mysql_query("SELECT id, username, online FROM Players WHERE corps = '$corps' ORDER BY username ASC");
+	echo "<hr><h2>Corp Members</h2><ul>";
+	while ($user = mysql_fetch_assoc($users))
+	{       
+	$online = $user['online'];
+	$offline = (time()-300);
+		if ($online >= $offline) {
+		echo ("<a href=\"profile.php?id={$user['id']}\">{$user['username']}</a> - ");
+		} else {
+		echo ("<a id=\"offline\" href=\"profile.php?id={$user['id']}\">{$user['username']}</a> - ");
+		}
+	}
+	echo "</ul><br /><br />";
+	$members=mysql_num_rows($users);
+	echo ("Total Corp Members: $members</div>");
+	include("footer.php");
+}
+?> 
